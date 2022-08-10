@@ -4,7 +4,7 @@ rm(list=ls())
 gc(TRUE)
 gc()
 
-setwd("D:/rong-paper/2022COXrealdata")
+#setwd("D:/rong-paper/2022COXrealdata")
 
 #require('mice')
 require('glmnet')
