@@ -309,7 +309,7 @@ up.delta.spg <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
       res
     }
  
-	fg_res <- fg(delta)
+	fg_res <- fg(delta_n = delta,X,Z,u,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q)
 	if ((max(fg_res) < 0) & (max(delta) ==0)){
 		delta_n <- delta
 	} else if((min(fg_res) > 0) & (min(delta)==1)) {
@@ -720,3 +720,4 @@ up.delta.optimParallel <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,la
 }
 
 up.delta <- up.delta.optimParallel
+up.delta <- up.delta.spg
