@@ -115,7 +115,7 @@ uf <- function(Z){  # uf, used in gradient of f function in updating delta, shou
    
 	cl <-makeCluster(4)
 	u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
-	u <- array(u,c(Q,N,N))
+	u <- array(u,c(Q,N*N))
 	stopCluster(cl)
 	gc()
 	
@@ -287,12 +287,12 @@ up.alpha <- function(Y,X,Z,alpha,betaa,delta,lambda_3,weig){
 }
 
 # #output: updated delta for given lambda_2,lambda_3 # nlm, nlminb, constrOptim, optimize
-up.delta.spg <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
+up.delta.spg <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
 	N <- dim(X)[1]
 	Q <- ncol(Z)
     
 	# update 20220808 add
-	u <- u; TAU <- TAU; R <- R; len <- len; alpha <- alpha; betaa <- betaa; delta <- delta; lambda_2 <- lambda_2;lambda_3<- lambda_3
+	TAU <- TAU; R <- R; len <- len; alpha <- alpha; betaa <- betaa; delta <- delta; lambda_2 <- lambda_2;lambda_3<- lambda_3
 
     updelta_time1 <- Sys.time()  
     
@@ -305,26 +305,26 @@ up.delta.spg <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
 	  res
     }
 	
-	fg <- function(delta_n,X,Z,u,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q){      		## gradient of function 'f'
+	fg <- function(delta_n,X,Z,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q){      		## gradient of function 'f'
       eta <- etaf(X,Z,alpha,betaa,delta_n)
       sum_exp <- sum.exp(X,Z,R,len,alpha,betaa,delta_n)
   	  I = rep(1,Q)
       V <- matrix(1,N,N)
       V[lower.tri(V)]=0
       G <- t(TAU) * (1/t(sum_exp)) %*% V * exp(t(eta)) * t(alpha)
-      IKF <-  I %*% t(as.vector(Kf(Z,delta_n))) * array(u,c(Q,N*N))
+      IKF <-  I %*% t(as.vector(Kf(Z,delta_n))) * uf(Z)#array(u,c(Q,N*N))
 	  
 	  res <-  as.vector( -(1/N)* IKF %*% kronecker(TAU,alpha) + (1/N)*IKF %*% (rep(G,each=N) * rep(alpha,N)) - lambda_2 * I  + (1/2) * lambda_3 *IKF %*% kronecker(alpha,alpha) )	  
       res
     }
  
-	fg_res <- fg(delta_n = delta,X,Z,u,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q)
+	fg_res <- fg(delta_n = delta,X,Z,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q)
 	if ((max(fg_res) < 0) & (max(delta) ==0)){
 		delta_n <- delta
 	} else if((min(fg_res) > 0) & (min(delta)==1)) {
 		delta_n <- delta
 	} else {
-		spg_res <- spg(par=delta,fn=f,gr=fg,X=X,Z=Z,u=u,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control=list(maximize=TRUE,checkGrad=FALSE,eps=1e-4)) #modi 20220808 1e-4
+		spg_res <- spg(par=delta,fn=f,gr=fg,X=X,Z=Z,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control=list(maximize=TRUE,checkGrad=FALSE,eps=1e-4)) #modi 20220808 1e-4
 		delta_n <- spg_res$par
 		delta_n <- ifelse(delta_n < 1e-4,0,delta_n)  #1e-3 # modi 20220808 1e-4
 		print(c(spg_res$message,spg_res$iter,spg_res$value,sum(delta_n != 0)))
@@ -389,7 +389,7 @@ upda.esti <- function(X,Z,TAU,R,len,E,len_E,alpha,betaa,delta){
 }
 
  #"No changes in the last 10 iterations, break iterations",see EPSGO step 6
-Qf <- function(X,Z,u,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda_2,lambda_3){
+Qf <- function(X,Z,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda_2,lambda_3){
 	N <- length(TAU)
 	P <- ncol(X)
 	Q <- ncol(Z)
@@ -408,7 +408,7 @@ Qf <- function(X,Z,u,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda
 	#upest_timeB1 <- Sys.time()
 	beta_n <- up.beta(Y,X,Z,alpha,delta,lambda_1,weig)
 	alpha_n <- up.alpha(Y,X,Z,alpha,betaa,delta,lambda_3,weig)
-	delta_n <- up.delta(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3)
+	delta_n <- up.delta(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3)
 	 
 	A_n  <- log(sum.exp(X,Z,R,len,alpha_n,beta_n,delta_n))# old
 	like_new <- (1/N) * (t(TAU)%*% (X %*% beta_n + hf(Z,alpha_n,delta_n) - A_n)) -  lambda_1  * sum(abs(beta_n)) - lambda_2 * sum(delta_n) - 1/2 *lambda_3 * t(alpha_n) %*% Kf(Z,delta_n) %*% alpha_n
@@ -434,7 +434,7 @@ Qf <- function(X,Z,u,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda
 
 		beta_n <- up.beta(Y,X,Z,alpha,delta,lambda_1,weig)
 		alpha_n <- up.alpha(Y,X,Z,alpha,betaa,delta,lambda_3,weig)
-		delta_n <- up.delta(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3)
+		delta_n <- up.delta(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3)
 		
 		A_n <- log(sum.exp(X,Z,R,len,alpha_n,beta_n,delta_n))# new
 		like_new <- (1/N) * (t(TAU)%*% (X %*% beta_n + hf(Z,alpha_n,delta_n) - A_n)) -  lambda_1  * sum(abs(beta_n)) - lambda_2 * sum(delta_n) - 1/2 *lambda_3 * t(alpha_n) %*% Kf(Z,delta_n) %*% alpha_n
@@ -499,7 +499,7 @@ lamf<- function(X,Z,TAU,TIM,Xvalid,Zvalid,TAUvalid,TIMvalid,#Hvalid, modi 202208
 	if(!is.matrix(X)){X <- matrix(X,nrow=N)}
 	P <- ncol(X)
 	Q <- ncol(Z)
-	u <- uf(Z)
+	#u <- uf(Z)
 	LH <- c()
 	ITER<-c()
 	#REG <- matrix(ncol=3)
@@ -520,7 +520,7 @@ lamf<- function(X,Z,TAU,TIM,Xvalid,Zvalid,TAUvalid,TIMvalid,#Hvalid, modi 202208
 	for(lambda_1 in lambda_1_seq){
 		for(lambda_2 in lambda_2_seq){
 			for(lambda_3 in lambda_3_seq){
-				a_b_d <- Qf(X,Z,u,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda_2,lambda_3)
+				a_b_d <- Qf(X,Z,TAU,R,len,E,len_E,alpha_nn,beta_nn,delta_nn,lambda_1,lambda_2,lambda_3)
 				alpha <- as.vector(a_b_d$alpha) 
 				betaa <- as.vector(a_b_d$betaa)
 				delta <- as.vector(a_b_d$delta)
@@ -624,7 +624,7 @@ ST<-function(dat){
 
 # optim
 # optimize for one q step
-up.delta.optim <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
+up.delta.optim <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
 	N <- dim(X)[1]
 	#Q<-ifelse(is.null(ncol(Z)),1,ncol(Z))#Z is N*Q
 	Q <- ncol(Z)
@@ -670,7 +670,7 @@ up.delta.optim <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
 }
 
 # optimParallel
-up.delta.optimParallel <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
+up.delta.optimParallel <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lambda_3){
 	N <- dim(X)[1]
 	#Q<-ifelse(is.null(ncol(Z)),1,ncol(Z))#Z is N*Q
 	Q <- ncol(Z)
@@ -693,7 +693,7 @@ up.delta.optimParallel <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,la
 		-res
 	}
 		
-	fg <- function(delta_n,X,Z,u,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q){      		## gradient of function 'f'
+	fg <- function(delta_n,X,Z,TAU,R,len,alpha,betaa,lambda_2,lambda_3,N,Q){      		## gradient of function 'f'
 		Zsqu <- Z^2 %*% delta_n %*% t(rep(1,N))
 		res <- Zsqu -2 * (Z*matrix(delta_n,nrow=N,ncol=Q,byrow=TRUE) )%*% t(Z)  + t(Zsqu)  
 		K <- exp(-res/Q) # modi Q = 1000
@@ -706,15 +706,15 @@ up.delta.optimParallel <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,la
 		V <- matrix(1,N,N)
 		V[lower.tri(V)]=0
 		G <- t(TAU) * (1/t(sum_exp)) %*% V * exp(t(eta)) * t(alpha)
-		IKF <-  I %*% t(as.vector(K)) * array(u,c(Q,N*N))
+		IKF <-  I %*% t(as.vector(K)) * uf(Z)#array(u,c(Q,N*N))
 	  
 		res <-  as.vector( -(1/N)* IKF %*% kronecker(TAU,alpha) + (1/N)*IKF %*% (rep(G,each=N) * rep(alpha,N)) - lambda_2 * I  + (1/2) * lambda_3 *IKF %*% kronecker(alpha,alpha) )	  
 		-res
     }
 	
-	cl <- makeCluster(7)
-	setDefaultCluster(cl=cl)
-	opt.par <-optimParallel(cl,par=delta,fn=f,gr=fg,X=X,Z=Z,u=u,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control = list(factr=1e-5))	# maximization default
+	ca <- makeCluster(7)
+	setDefaultCluster(cl=ca)
+	opt.par <-optimParallel(par=delta,fn=f,gr=fg,X=X,Z=Z,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control = list(factr=1e-5))	# maximization default
 	delta_n <- opt.par$par
 	setDefaultCluster(cl=NULL)
 	stopCluster(cl)
