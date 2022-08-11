@@ -701,12 +701,17 @@ up.delta.optimParallel <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lamb
 		eta <- X %*% betaa + h
 		exp.eta <- exp(eta) + 1e-5
 		sum_exp <- as.vector(ifelse(R>0,1,0) %*% exp.eta)
+		
+		cl <-makeCluster(4)
+		u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
+		u <- array(u,c(Q,N*N))
+		stopCluster(cl)
 
 		I = rep(1,Q)
 		V <- matrix(1,N,N)
 		V[lower.tri(V)]=0
 		G <- t(TAU) * (1/t(sum_exp)) %*% V * exp(t(eta)) * t(alpha)
-		IKF <-  I %*% t(as.vector(K)) * uf(Z)#array(u,c(Q,N*N))
+		IKF <-  I %*% t(as.vector(K)) * u#f(Z)#array(u,c(Q,N*N))
 	  
 		res <-  as.vector( -(1/N)* IKF %*% kronecker(TAU,alpha) + (1/N)*IKF %*% (rep(G,each=N) * rep(alpha,N)) - lambda_2 * I  + (1/2) * lambda_3 *IKF %*% kronecker(alpha,alpha) )	  
 		-res
