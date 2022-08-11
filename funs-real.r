@@ -723,7 +723,7 @@ up.delta.optimParallel <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lamb
 	opt.par <-optimParallel(par=delta,fn=f,gr=fg,X=X,Z=Z,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control = list(factr=1e-5))	# maximization default
 	delta_n <- opt.par$par
 	setDefaultCluster(cl=NULL)
-	stopCluster(cl)
+	stopCluster(ca)
 	print(paste(opt.par$value,opt.par$message,opt.par$convergence,sep=','))
 
   
