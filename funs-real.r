@@ -105,15 +105,24 @@ uf <- function(Z){  # uf, used in gradient of f function in updating delta, shou
   #   Q<-ifelse(is.null(ncol(Z)),1,ncol(Z))#Z is N*Q
   N <- nrow(Z)
   Q <- ncol(Z)
-  u <- array(0,c(Q,N,N))
-  tZ <-t(Z)
-  for(i in 1:N){
-    u[,,i]<-(Z[i,]-tZ)^2
-  }
-  u <- u/Q   # modi Q = 1000 
-  gc()
-  return(u)
+#  u <- array(0,c(Q,N,N))
+#  tZ <-t(Z)
+#  for(i in 1:N){
+#    u[,,i]<-(Z[i,]-tZ)^2
+#  }
+#  u <- u/Q   # modi Q = 1000 	
+#  gc()
+   
+	cl <-makeCluster(4)
+	u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
+	u <- array(u,c(Q,N,N))
+	stopCluster(cl)
+	gc()
+	
+	return(u)
 }
+
+
 
 # modi 20220808 short the computing time 10*  
 # K N*N
@@ -705,19 +714,19 @@ up.delta.optimParallel <- function(X,Z,u,TAU,R,len,alpha,betaa,delta,lambda_2,la
 	
 	cl <- makeCluster(7)
 	setDefaultCluster(cl=cl)
-	opt.par <-optimParallel(par=delta,fn=f,gr=fg,X=X,Z=Z,u=u,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control = list(factr=1e-5))	# maximization default
+	opt.par <-optimParallel(cl,par=delta,fn=f,gr=fg,X=X,Z=Z,u=u,TAU=TAU,R=R,len=len,alpha=alpha,betaa=betaa,lambda_2=lambda_2,lambda_3=lambda_3,N=N,Q=Q,lower=rep(0,Q),upper=rep(1,Q),control = list(factr=1e-5))	# maximization default
 	delta_n <- opt.par$par
-	print(paste(opt.par$value,opt.par$message,opt.par$convergence,sep=','))
 	setDefaultCluster(cl=NULL)
 	stopCluster(cl)
+	print(paste(opt.par$value,opt.par$message,opt.par$convergence,sep=','))
+
   
 #	updelta_time2 <- Sys.time()
 #	updelta_time <- round(difftime(updelta_time2,updelta_time1,units='secs'))
 #	print(paste('## time for updating delta=',updelta_time,'seconds##'))
   
 	delta <- ifelse(delta_n<1e-4,0,delta_n)
+	
+	gc(TRUE)
 	return(delta)
 }
-
-up.delta <- up.delta.optimParallel
-up.delta <- up.delta.spg
