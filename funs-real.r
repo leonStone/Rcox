@@ -105,19 +105,18 @@ uf <- function(Z){  # uf, used in gradient of f function in updating delta, shou
   #   Q<-ifelse(is.null(ncol(Z)),1,ncol(Z))#Z is N*Q
   N <- nrow(Z)
   Q <- ncol(Z)
-#  u <- array(0,c(Q,N,N))
-#  tZ <-t(Z)
-#  for(i in 1:N){
-#    u[,,i]<-(Z[i,]-tZ)^2
-#  }
-#  u <- u/Q   # modi Q = 1000 	
-#  gc()
+  u <- array(0,c(Q,N,N))
+  for(i in 1:N){
+    u[,,i]<-(Z[i,]-t(Z))^2/Q
+  }	
+  u <- array(u,c(Q,N*N))
+  gc()
    
-	cl <-makeCluster(4)
-	u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
-	u <- array(u,c(Q,N*N))
-	stopCluster(cl)
-	gc()
+	#cl <-makeCluster(4)
+	#u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
+	#u <- array(u,c(Q,N*N))
+	#stopCluster(cl)
+	#gc()
 	
 	return(u)
 }
@@ -702,10 +701,12 @@ up.delta.optimParallel <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lamb
 		exp.eta <- exp(eta) + 1e-5
 		sum_exp <- as.vector(ifelse(R>0,1,0) %*% exp.eta)
 		
-		cl <-makeCluster(4)
-		u <- parSapply(cl,1:N ,function(i,Z,Q){(Z[i,]-t(Z))^2/Q},Z=Z,Q=Q)
+		u <- array(0,c(Q,N,N))
+		for(i in 1:N){
+		u[,,i]<-(Z[i,]-t(Z))^2/Q
+		}	
 		u <- array(u,c(Q,N*N))
-		stopCluster(cl)
+		gc()
 
 		I = rep(1,Q)
 		V <- matrix(1,N,N)
