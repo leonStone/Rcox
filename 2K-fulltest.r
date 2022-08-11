@@ -4,7 +4,10 @@ rm(list=ls())
 gc(TRUE)
 gc()
 
+
 #setwd("D:/rong-paper/2022COXrealdata")
+
+Hdir <- '../'
 
 #require('mice')
 require('glmnet')
@@ -28,7 +31,10 @@ lambda_3_seq <-seq(2^-6.5,2^-3,length.out = 5)
 
 
 source('funs-real.r')
-load('realdata.RData')
+load(paste(Hdir,'realdata.RData',sep=''))
+
+up.delta <- up.delta.optimParallel
+#up.delta <- up.delta.spg
 
 # remove the imcomplete data
 id0 <- unique(which(clin=='NA',arr.ind=TRUE)[,1])
@@ -43,7 +49,7 @@ clin <- clin[id0,]
 rm(id0)
 
 ## 2K  
-subid <- ncol(dat)#1:2000 
+subid <- 2000#ncol(dat)#1:2000 
 dat <- dat[,1:subid]
 
 ## repetition
@@ -53,7 +59,7 @@ RES <- matrix(0,ncol=(3+5+20162))[-1,]
 #RES_lasso <- matrix(0,ncol=(1+5+20162))[-1,]
 #RES_cosso <- matrix(0,ncol=(1))[-1,]
 
-LH_PGKM <- AUC_PGKM <- ROC_PGKM <- Cs_PGKM <- c()
+LH_PGKM <- AUC_PGKM <-  Cs_PGKM <- c()
 FPS_PGKM<-c()
 TPS_PGKM<-c()
 #FPS_LASSO<-c()
@@ -62,7 +68,7 @@ TPS_PGKM<-c()
 #TPS_COSSO<-c()
 pgckmTime <- matrix(0,ncol=1)[-1,] ## PGKM takes time
 
-sink(file=paste(nre,nam,'.log',sep=''))
+sink(file=paste(Hdir,nam,'.log',sep=''))
 for(re in 1:nre){
 	set.seed(re)
 ########### attention! original data need initial every repeat	  
@@ -104,7 +110,7 @@ for(re in 1:nre){
 	pgckmTime2 <- Sys.time()
 	pgckmtime <- round(difftime(pgckmTime2,pgckmTime1,units='secs'))
 	pgckmTime <- rbind(pgckmTime,as.vector(pgckmtime))
-	save(qt,file=paste(nam,'qt.RData',sep='-'))
+	save(qt,file=paste(Hdir,nam,'-qt.RData',sep=''))
 	
 	RT<-Rf(TIMT)$R;lenT<-Rf(TIMT)$len
 	hath <- hathaf(XT,Z,ZT,RT,lenT,as.vector(qt$ALPHA),as.vector(qt$BETA),as.vector(qt$DELTA))
@@ -135,7 +141,7 @@ for(re in 1:nre){
 	print(paste('#### ',date(),'##re=',re,' has done ##PGKM takes',pgckmtime,'secs##'))
 	rm(.Random.seed)
 
-	save(FPS_PGKM,TPS_PGKM,LH_PGKM,AUC_PGKM,Cs_PGKM,RES,file=paste(nam,'res.RData',sep='-'))
+	save(FPS_PGKM,TPS_PGKM,LH_PGKM,AUC_PGKM,Cs_PGKM,RES,file=paste(Hdir,nam,'-res.RData',sep=''))
 }
 sink()  
 
