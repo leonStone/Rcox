@@ -493,7 +493,7 @@ hathaf <- function(Xvalid,Z,Zvalid,Rvalid,lenvalid,alpha,betaa,delta){
 #                    bounds=bounds,parms.coding=parms.coding,seed=seed,maxevals=maxevals,verbose=verbose)
 
 
-lamf<- function(X,Z,TAU,TIM,Xvalid,Zvalid,TAUvalid,TIMvalid,#Hvalid, modi 20220809 Hvalid delete in real data
+lamf<- function(X,Z,TAU,TIM,Xvalid,Zvalid,TAUvalid,TIMvalid,Hvalid,#modi 20220809 Hvalid delete in real data
                  lambda_1_seq,lambda_2_seq,lambda_3_seq){
 	N<-nrow(Z)# number of training observations
 	Nvalid <- nrow(Zvalid)# number of testing observations
