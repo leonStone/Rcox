@@ -8,6 +8,7 @@
 # add parallel package
 # release RAM
 
+# add datid 11 for paper 20221214
 
 
 ###################################################
@@ -46,6 +47,8 @@ datf <- function(datid,P,Q,PT,QT,N,Nvalid,Ntest){
     str <- 'H = 10*cos(Z[,1])* Z[,2] + 6* (Z[,1])^2 - 5*exp(Z[,1]) * Z[,2] - 6* sin(Z[,2]) * cos(Z[,3]) + 10* exp(Z[,3]) * sin(Z[,4])-8* Z[,2] * sin(Z[,4])- 2* cos(Z[,3])*Z[,4]^2 -2* exp(Z[,4]) * cos(Z[,5])-8*sin(Z[,4])* Z[,5]^2' 
   }else if(datid == 101){
     str <- 'H = 10 * Z[,1] + Z[,2]^2 + 20 * Z[,3] * Z[,4] + Z[,5]' 
+  }else if(datid == 11){
+      str <- 'H = 0.06*(12*cos(Z[,1])* Z[,2] - 4*exp(Z[,1]) * Z[,2] + 12* exp(Z[,2]) * sin(Z[,3])- 2* cos(Z[,1])*Z[,3]^2 -2* exp(Z[,2]) * cos(Z[,3]))' 
   }
   
   eval(parse(text=str))
@@ -736,3 +739,5 @@ up.delta.optimParallel <- function(X,Z,TAU,R,len,alpha,betaa,delta,lambda_2,lamb
 	gc(TRUE)
 	return(delta)
 }
+
+	       
